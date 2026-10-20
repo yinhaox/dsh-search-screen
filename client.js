@@ -10,7 +10,7 @@
  */
 
 window.__ModuleLoader__.load({
-  id: 'dsh-search-screen',
+  id: '@yinhaox/dsh-search-screen',
   factory(require) {
     const React = require('react')
     const h = React.createElement

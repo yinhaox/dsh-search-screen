@@ -15,9 +15,13 @@
 
 ## 安装
 
-在 dsh 的 Web UI 里：**插件 → 添加插件 → 选择本地目录**，选中本仓库目录；或让 Agent 用 `plugin_manager` 的 `install_bundle` 安装本目录。安装后侧栏出现「搜索」入口，无需重启（Host 半与 Client 半都会随组合激活）。
+三种方式，推荐用 dsh 的插件管理器（它会写 dependencies、选 bundle、触发重载）：
 
-也可以手动加进 profile，把一个 `link:` 依赖装进 profile 再在 `cordis.patch.yml` 里插入同名行；推荐还是用插件管理器，它会写 dependencies、选 bundle、触发重载。
+1. **插件页**：**插件 → 添加插件**，输入 npm 包名 `@yinhaox/dsh-search-screen`、Git 地址或本地目录。
+2. **本地目录**：把本仓库 `link:` 进 profile 后，在 `cordis.patch.yml` 里插入同名行。
+3. **Agent**：让 Agent 用 `plugin_manager` 的 `install_bundle` 安装上述任一种 target。
+
+安装后侧栏出现「搜索」入口，无需重启（Host 半与 Client 半都会随组合激活）。
 
 ## 配置
 
@@ -32,13 +36,13 @@
 
 ```yaml
 - id: search-screen
-  name: dsh-search-screen
+  name: '@yinhaox/dsh-search-screen'
   config:
     maxResults: 12
     timeoutMs: 30000
 ```
 
-搜索 provider 由 profile 的 `web` 行决定（例如本机 web profile 固定为 `deepseek-search-api`）。凭证同样复用 dsh 的 credentials / 启动环境：没有 `DEEPSEEK_API_KEY` 时页面会显示 provider 返回的 `WEB_PROVIDER_CREDENTIAL_MISSING` 说明，而不是空白。
+搜索 provider 由 profile 的 `web` 行决定（例如把 `searchProvider` 设为 `deepseek-search-api`）。凭证同样复用 dsh 的 credentials / 启动环境：没有 `DEEPSEEK_API_KEY` 时页面会显示 provider 返回的 `WEB_PROVIDER_CREDENTIAL_MISSING` 说明，而不是空白。
 
 ## 实现
 
@@ -52,7 +56,7 @@ locale/*.json     插件管理器展示用标题与描述
 icon.svg          插件图标
 ```
 
-- **Client 半**通过 `window.__ModuleLoader__.load({ id: 'dsh-search-screen', factory(require) })` 注册，`id` 必须等于包名；用 `ctx.slots.inject()` + `ctx.slots.register()` 把图标注册进 `sidebar.panellist`（`id: 'search-screen'`），把页面注册进 `main` 键控槽位（同 id），点击侧栏即由 layout 选中该面板。
+- **Client 半**通过 `window.__ModuleLoader__.load({ id: '@yinhaox/dsh-search-screen', factory(require) })` 注册，`id` 必须等于包名；用 `ctx.slots.inject()` + `ctx.slots.register()` 把图标注册进 `sidebar.panellist`（`id: 'search-screen'`），把页面注册进 `main` 键控槽位（同 id），点击侧栏即由 layout 选中该面板。
 - **Client → Host** 走同包私有 HTTP 路由：页面 `fetch('search-screen/search?q=…')`（相对路径，和 dsh 的 `open-in-app` 一致），Host 半用 `ctx.web.search({ query, maxResults }, signal)` 执行并返回 JSON。这样不需要 typert/Remote 生成产物，插件可以在任何 dsh 版本里按纯 JS 加载。
 - **信任围栏**：路由存在 `connection` 服务时先调用它的 `requestRejection(req)`（Host/Origin 校验 + 浏览器登录态），再处理请求；只有 GET，查询上限 500 字符。
 - 失败映射：带 `code` 的 `WebError` 以 `200 { ok:false, error:{ code, message } }` 返回给页面（页面按 code 显示本地化文案，其余展示 Host 的说明）；未知内部错误返回 500 并写日志。
@@ -78,3 +82,7 @@ npm test          # node --test（23 个用例）
 - 路由依赖 dsh 的 `webServer` 与 `web` 两个服务；没有 `webServer` 的组合（headless/SDK）不会激活本插件，也没有可打开的页面。
 - 搜索在 Session 之外执行，因此只走 provider 的 API key 凭证，不会借用 DeepSeek Account 的会话令牌；用 Account 模型登录但没有存 API key 的环境会看到凭证缺失提示。
 - 不做流式结果、不做站内打开；最近搜索只存在插件实例内存里，刷新页面或重启后清空。
+
+## License
+
+[MIT](LICENSE) © yinhaox

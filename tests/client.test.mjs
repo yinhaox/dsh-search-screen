@@ -81,7 +81,7 @@ function createBrowserContext() {
 }
 
 test('registers a lazy factory under the package name', () => {
-  assert.equal(loaded.id, 'dsh-search-screen')
+  assert.equal(loaded.id, '@yinhaox/dsh-search-screen')
   assert.equal(typeof loaded.factory, 'function')
   const plugin = loaded.factory(requireStub)
   assert.deepEqual(plugin.inject, ['slots', 'locale'])

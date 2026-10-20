@@ -1,8 +1,27 @@
 {
-  "name": "dsh-search-screen",
+  "name": "@yinhaox/dsh-search-screen",
   "version": "0.1.0",
-  "private": true,
   "description": "A full-window DeepSeek web-search page for the DeepSeek Harness Web UI: sidebar entry, big search box, DeepSeek answer, and citeable sources.",
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "plugin",
+    "search",
+    "web-search",
+    "ui"
+  ],
+  "license": "MIT",
+  "author": "yinhaox <yinhaox@users.noreply.github.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yinhaox/dsh-search-screen.git"
+  },
+  "homepage": "https://github.com/yinhaox/dsh-search-screen#readme",
+  "bugs": {
+    "url": "https://github.com/yinhaox/dsh-search-screen/issues"
+  },
   "type": "module",
   "main": "./index.js",
   "exports": {
@@ -19,13 +38,17 @@
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node --test"
   },
   "engines": {
     "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dsh": {
     "bundle": {

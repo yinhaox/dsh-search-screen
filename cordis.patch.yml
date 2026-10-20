@@ -3,7 +3,7 @@
 # the defaults a profile can override by row id.
 - insert:
     - id: search-screen
-      name: dsh-search-screen
+      name: '@yinhaox/dsh-search-screen'
       config:
         # Sources the page asks for; integer 1..20.
         maxResults: 8
