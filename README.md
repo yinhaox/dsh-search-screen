@@ -4,7 +4,9 @@
 [![CI](https://github.com/yinhaox/dsh-search-screen/actions/workflows/ci.yml/badge.svg)](https://github.com/yinhaox/dsh-search-screen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-给 **DeepSeek Harness（dsh）Web UI** 加一个「搜索大屏」：左侧栏一个放大镜入口，点开是整窗的搜索页——大搜索框、DeepSeek 摘要、可引用的来源列表。搜索走 dsh 自己的 web 搜索服务（`ctx.web`），和模型侧的 `web_search` 工具使用同一套 provider 选择，所以**在 profile 里配置一次，两边同时生效**。
+在 **DeepSeek Harness（dsh）的 Web UI** 里直接搜网页。点击左侧栏的「搜索」打开一个全屏搜索页，输入问题后可以看答案、来源标题、站点和摘要片段。
+
+搜索走 dsh 自己的 web 服务（`ctx.web`），与模型侧的 `web_search` 工具共用同一套 provider 选择：profile 里配置一次，两边同时生效，不需要再申请一套搜索服务或 API key。
 
 这是一个独立插件包（bundle + Client UI 插件），不依赖 dsh 源码仓库，也没有任何 npm 运行时依赖。
 
