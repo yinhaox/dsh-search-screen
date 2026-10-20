@@ -8,6 +8,10 @@
 
 DeepSeek Harness（dsh）Web UI 的网页搜索插件。侧栏的「搜索」入口打开一个全屏搜索页，搜索走 dsh 已配置的搜索服务，页面展示答案和来源。
 
+![搜索首页](https://raw.githubusercontent.com/yinhaox/dsh-search-screen/main/docs/screenshots/search-home.png)
+
+![搜索结果页](https://raw.githubusercontent.com/yinhaox/dsh-search-screen/main/docs/screenshots/search-results.png)
+
 ## 功能
 
 - 侧栏全局入口，打开全屏搜索页（不绑定 Session）

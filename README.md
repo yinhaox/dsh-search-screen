@@ -8,6 +8,10 @@ English | [中文](README.zh.md)
 
 A web search plugin for the DeepSeek Harness (dsh) Web UI. The Search entry in the sidebar opens a full-window search page that uses the search service already configured in dsh and shows answers and sources.
 
+![Search page](https://raw.githubusercontent.com/yinhaox/dsh-search-screen/main/docs/screenshots/search-home.png)
+
+![Search results](https://raw.githubusercontent.com/yinhaox/dsh-search-screen/main/docs/screenshots/search-results.png)
+
 ## Features
 
 - Global sidebar entry that opens a full-window search page, independent of the current Session
