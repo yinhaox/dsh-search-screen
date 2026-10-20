@@ -33,6 +33,12 @@ jobs:
           # Token-based publishing: uncomment this line and the env block below.
           # registry-url: 'https://registry.npmjs.org'
 
+      - name: Use npm with Trusted Publishing support
+        # Node 22 bundles npm 10, which predates OIDC trusted publishing
+        # (npm >= 11.5.1 required); without this the Publish step runs
+        # unauthenticated and fails.
+        run: npm install -g npm@11
+
       - name: Install test dependencies
         run: npm install --no-audit --no-fund
 
