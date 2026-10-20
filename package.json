@@ -1,7 +1,7 @@
 {
   "name": "@yinhaox/dsh-search-screen",
   "version": "0.1.1",
-  "description": "Search the web from inside the DeepSeek Harness UI, with answers and citeable sources on a full-window page that uses the same provider as web_search.",
+  "description": "A full-window web search page for the DeepSeek Harness Web UI, using the same search provider as the agent's web_search tool.",
   "keywords": [
     "deepseek",
     "deepseek-harness",

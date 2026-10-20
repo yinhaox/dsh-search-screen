@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Search Screen",
-    "description": "Search the web without leaving the Harness UI. A full-window page shows answers and citeable sources, using the same provider as the agent's web_search tool."
+    "description": "A full-window web search page for the Harness Web UI. It uses the same search provider as the agent's web_search tool."
   }
 }
