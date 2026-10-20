@@ -7,10 +7,11 @@
 ## 界面
 
 - **侧栏入口**：与「插件」「自动化任务」同级，点击打开全局面板（不绑定 Session）。
-- **搜索首页**：品牌标题 + 大号胶囊搜索框 + 示例查询 / 最近搜索 chips。
-- **结果页**：DeepSeek 摘要卡片 + 来源列表（标题、站点、发布日期、两行摘要），点击在新标签页打开。
-- **状态**：搜索中骨架屏、空结果、失败卡片（展示错误码、可重试）、超时提示；全部文案走 dsh 的 locale 服务（中文 / English）。
-- **主题**：只用 `--dsw-alias-*` 主题 token，自动跟随明暗主题；`prefers-reduced-motion` 下关闭动效。
+- **搜索首页**：品牌 tile + 「DeepSeek 搜索」字样，居中大号胶囊搜索框（含清除按钮），下方 `Enter` / `Esc` 键位提示与「试试这些 / 最近搜索」chips；背景有一层极淡的品牌色径向光晕。
+- **结果页**：搜索框收进**粘性工具栏**（滚动时始终可改词），下面是 `「查询」· N 条结果 · 0.6 秒` 元信息、DeepSeek 摘要卡片和来源列表；来源带站点首字母图标、标题、站点 / 日期、两行摘要，悬停显示「新标签页打开」箭头。
+- **状态**：搜索中骨架屏、空结果、失败卡片（错误码 chip + 重试 + 返回首页）、超时提示；全部文案走 dsh 的 locale 服务（中文 / English）。
+- **交互**：搜索后焦点留在输入框可直接改词；`Esc` 先清空、再回首页；输入法组合状态下的 Enter 不会误提交；从侧栏重新进入面板会自动聚焦；最近搜索在本次页面内跨面板保留。
+- **主题**：只用 `--dsw-alias-*` 主题 token，自动跟随明暗主题；窄屏（≤720px）单列布局、图标式返回；`prefers-reduced-motion` 下关闭动效。
 
 ## 安装
 
@@ -59,14 +60,15 @@ icon.svg          插件图标
 ## 开发与测试
 
 ```sh
-pnpm install      # 仅测试用的 React devDependency，插件运行时零依赖
+pnpm install      # 仅测试用的 React / jsdom devDependency，插件运行时零依赖
 node --check index.js
 node --check client.js
-npm test          # node --test
+npm test          # node --test（23 个用例）
 ```
 
-- `tests/handler.test.mjs` 用假 `req`/`res` 覆盖：查询裁剪与上限、seam 调用参数、来源投影、信任围栏、错误码映射、超时、405。
+- `tests/handler.test.mjs` 用假 `req`/`res` 覆盖：查询裁剪与上限、seam 调用参数、来源投影与耗时、信任围栏、错误码映射、超时、405。
 - `tests/client.test.mjs` 用假 `window.__ModuleLoader__` 捕获插件工厂，校验 `apply` 注册的槽位/字典，并用 `react-dom/server` 冒烟渲染页面（发现会炸掉槽位条目的组件错误），同时校验样式只引用宿主 token、没有字面色值。
+- `tests/client.interaction.test.mjs` 在 jsdom 里真实输入、提交、等待结果：覆盖结果渲染、骨架屏、失败重试、空结果、`Esc`/清除、IME 组合态 Enter 不提交、焦点保持、最近搜索跨面板保留。
 - Client 半改动会被 dsh 的 client-hmr 通过 `lib/client.js`（本包即 `client.js`）的 mtime 轮询热替换；Host 半改动在下次 profile 重组（插件管理器操作或 patch 变更）时生效。
 - 页面样式只用 `--dsw-alias-*` / `--dsw-radius-*` 等宿主 token；没有 import 任何 `@deepseek-ai/dsh-client-*` 包，dsh 升级不会让这个入口崩掉。
 
@@ -75,4 +77,4 @@ npm test          # node --test
 - **只服务 Web**（含 `dsh web` 的浏览器端）。Desktop/IPC 载体下页面里的相对 `fetch` 不保证可用。
 - 路由依赖 dsh 的 `webServer` 与 `web` 两个服务；没有 `webServer` 的组合（headless/SDK）不会激活本插件，也没有可打开的页面。
 - 搜索在 Session 之外执行，因此只走 provider 的 API key 凭证，不会借用 DeepSeek Account 的会话令牌；用 Account 模型登录但没有存 API key 的环境会看到凭证缺失提示。
-- 不做流式结果、不做站内打开、不缓存查询历史（最近搜索仅保存在当前页面内存中）。
+- 不做流式结果、不做站内打开；最近搜索只存在插件实例内存里，刷新页面或重启后清空。

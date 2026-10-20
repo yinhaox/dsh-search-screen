@@ -68,7 +68,11 @@ test('runs the query through the seam and projects the sources', async () => {
   assert.equal(response.headers['cache-control'], 'no-store')
   assert.deepEqual(calls[0].request, { query: 'deepseek', maxResults: 3 })
   assert.equal(calls[0].aborted, false)
-  assert.deepEqual(bodyOf(response), {
+  const body = bodyOf(response)
+  assert.equal(typeof body.tookMs, 'number')
+  assert.ok(body.tookMs >= 0 && body.tookMs < 5000)
+  const { tookMs: _tookMs, ...rest } = body
+  assert.deepEqual(rest, {
     ok: true,
     query: 'deepseek',
     maxResults: 3,

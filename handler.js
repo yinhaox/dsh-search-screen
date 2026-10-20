@@ -128,6 +128,7 @@ export function createSearchHandler({ search, maxResults, timeoutMs, rejection =
     }
 
     const controller = new AbortController()
+    const startedAt = Date.now()
     let timedOut = false
     const timer = setTimeout(() => {
       timedOut = true
@@ -139,6 +140,9 @@ export function createSearchHandler({ search, maxResults, timeoutMs, rejection =
         ok: true,
         query,
         maxResults,
+        // The page shows this beside the result count; it measures the seam call
+        // only, so it excludes request parsing and JSON encoding.
+        tookMs: Date.now() - startedAt,
         sources: result.sources.map(projectSource),
         truncated: result.truncated === true,
         ...result.content === undefined ? {} : { answer: result.content },
