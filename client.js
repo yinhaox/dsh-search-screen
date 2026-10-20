@@ -294,11 +294,12 @@ window.__ModuleLoader__.load({
     /**
      * Format a publication date for the metadata line.
      * @param publishedAt - provider-supplied ISO-8601 text.
+     * @param locale - active dsh locale id, so the date follows the UI language.
      * @returns the local date, or undefined when it cannot parse.
      */
-    function dateOf(publishedAt) {
+    function dateOf(publishedAt, locale) {
       const date = new Date(publishedAt)
-      return Number.isNaN(date.getTime()) ? undefined : date.toLocaleDateString()
+      return Number.isNaN(date.getTime()) ? undefined : date.toLocaleDateString(locale)
     }
 
     /**
@@ -691,7 +692,7 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'dsh-search-screen__external' }, h(ExternalIcon))),
                 h('span', { className: 'dsh-search-screen__sourceMeta' }, [
                   hostOf(source.url),
-                  source.publishedAt === undefined ? undefined : dateOf(source.publishedAt),
+                  source.publishedAt === undefined ? undefined : dateOf(source.publishedAt, language),
                 ].filter(part => part !== undefined && part !== '').join(' · ')),
                 source.snippet === undefined || source.snippet === ''
                   ? null

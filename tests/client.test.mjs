@@ -118,10 +118,12 @@ test('registers complete zh and en dictionaries', () => {
 })
 
 test('the sidebar label follows the active locale', () => {
-  const { ctx, registrations } = createBrowserContext()
+  const { ctx, registrations, setActive } = createBrowserContext()
   loaded.factory(requireStub).apply(ctx)
   const label = registrations.find(entry => entry.options.name === 'sidebar.panellist').options.label
   assert.equal(label(), '搜索')
+  setActive('en')
+  assert.equal(label(), 'Search')
 })
 
 test('renders the hero page as the panel content', () => {
@@ -150,6 +152,30 @@ test('renders the hero page as the panel content', () => {
   assert.match(markup, /DeepSeek Harness/)
   assert.match(markup, /role="status"/)
   assert.doesNotMatch(markup, /__dsh-entry-crashed|error\.unknown/u)
+})
+
+test('renders the hero page in English for the en locale', () => {
+  const { ctx, registrations, dictionaries } = createBrowserContext()
+  loaded.factory(requireStub).apply(ctx)
+  const page = registrations.find(entry => entry.options.name === 'main').component
+  const dictionary = dictionaries.en[NS]
+  const t = (key, params) => {
+    const template = dictionary[key] ?? key
+    return params === undefined
+      ? template
+      : template.replace(/\{(\w+)\}/gu, (match, name) => name in params ? String(params[name]) : match)
+  }
+  const markup = renderToStaticMarkup(React.createElement(page, {
+    t,
+    search: async () => { throw new Error('the idle page must not search') },
+    activeLocale: () => 'en',
+  }))
+
+  assert.match(markup, /DeepSeek Search/)
+  assert.match(markup, /Search the web, press Enter/)
+  assert.match(markup, /Try one of these/)
+  assert.match(markup, /Cordis plugin system/)
+  assert.doesNotMatch(markup, /试试这些|输入搜索内容/u)
 })
 
 test('the stylesheet uses theme tokens and no literal colors', () => {

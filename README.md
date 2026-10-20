@@ -4,34 +4,36 @@
 [![CI](https://github.com/yinhaox/dsh-search-screen/actions/workflows/ci.yml/badge.svg)](https://github.com/yinhaox/dsh-search-screen/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-DeepSeek Harness（dsh）Web UI 的网页搜索插件。侧栏的「搜索」入口打开一个全屏搜索页，搜索走 dsh 已配置的搜索服务，页面展示答案和来源。
+English | [中文](README.zh.md)
 
-## 功能
+A web search plugin for the DeepSeek Harness (dsh) Web UI. The Search entry in the sidebar opens a full-window search page that uses the search service already configured in dsh and shows answers and sources.
 
-- 侧栏全局入口，打开全屏搜索页（不绑定 Session）
-- 结果显示答案、来源标题、站点、发布日期和摘要，点击在新标签页打开
-- 搜索中、无结果、失败、超时各有对应状态
-- 中文 / English 界面，跟随 dsh 的明暗主题
-- 纯 JavaScript，零运行时依赖，无需构建
+## Features
 
-## 安装
+- Global sidebar entry that opens a full-window search page, independent of the current Session
+- Results show the answer, source titles, sites, publication dates, and snippets; links open in a new tab
+- Dedicated states for searching, no results, failures, and timeouts
+- English and Chinese UI, following the language and theme set in dsh
+- Plain JavaScript with no runtime dependencies and no build step
 
-在 Web UI 里打开 **插件 → 添加插件**，输入 npm 包名 `@yinhaox/dsh-search-screen`；也可以用 Git 地址或本地目录安装。安装后侧栏出现「搜索」入口，无需重启。
+## Install
 
-## 使用
+In the Web UI, open **Plugins → Add plugin** and enter the npm package name `@yinhaox/dsh-search-screen`; a Git URL or local directory works too. The Search entry appears in the sidebar after installation, with no restart.
 
-点击侧栏「搜索」，输入关键词按 Enter。搜索后焦点留在输入框，可以直接改词再搜；Esc 清空输入，输入为空时再按 Esc 回到首页。
+## Usage
 
-## 配置
+Open **Search** in the sidebar, type a query, and press Enter. Focus stays in the field after a search, so the query can be edited and run again; Esc clears the field, and pressing Esc on an empty field returns to the search home.
 
-插件的行 id 是 `search-screen`，两个可选字段：
+## Configuration
 
-| 字段 | 默认 | 范围 | 说明 |
+The row id is `search-screen`, with two optional fields:
+
+| Field | Default | Range | Description |
 |---|---|---|---|
-| `maxResults` | `8` | 1–20 | 返回的来源条数 |
-| `timeoutMs` | `20000` | 1000–120000 | 单次搜索的超时时间 |
+| `maxResults` | `8` | 1–20 | Number of sources returned |
+| `timeoutMs` | `20000` | 1000–120000 | Timeout for one search |
 
-在 profile 的 `cordis.patch.yml` 里按行 id 覆盖：
+Override them by row id in the profile's `cordis.patch.yml`:
 
 ```yaml
 - id: search-screen
@@ -41,29 +43,29 @@ DeepSeek Harness（dsh）Web UI 的网页搜索插件。侧栏的「搜索」入
     timeoutMs: 30000
 ```
 
-搜索服务由 profile 的 `web` 行决定，与智能体的 `web_search` 工具共用；凭证沿用 dsh 的 credentials / 启动环境。
+The search service comes from the profile's `web` row and is shared with the agent's `web_search` tool; credentials come from dsh's credentials / launch environment.
 
-## 开发
+## Development
 
-需要 Node 22.19 或更新的版本。
+Node 22.19 or newer is required.
 
 ```sh
 npm install
 npm test
 ```
 
-测试覆盖 Host 路由、插件注册，以及 jsdom 下的页面交互。
+Tests cover the Host route, plugin registration, and page interaction under jsdom.
 
-## 已知限制
+## Limitations
 
-- 仅支持 `dsh web`；Desktop 的 IPC 载体下不保证可用。
-- 依赖 `webServer` 和 `web` 服务，headless / SDK 组合下不会激活。
-- 搜索在 Session 之外执行，只使用 API key 凭证。
-- 最近搜索只保存在内存中，刷新或重启后清空。
+- Web only (`dsh web`); the Desktop IPC carrier is not guaranteed to work.
+- Requires the `webServer` and `web` services; compositions such as headless or the SDK do not activate the plugin.
+- Searches run outside a Session, so they use API key credentials only.
+- Recent searches live in memory and are cleared on refresh or restart.
 
-## 发布
+## Release
 
-发布由 GitHub Actions 完成（[`.github/workflows/publish.yml`](.github/workflows/publish.yml)）。在 npm 包设置里配置 Trusted publishing 后，更新 `package.json` 的版本并推送 `v*` tag 即可。
+Releases run in GitHub Actions ([`.github/workflows/publish.yml`](.github/workflows/publish.yml)). After configuring npm Trusted publishing, bump the version in `package.json` and push a `v*` tag.
 
 ## License
 
