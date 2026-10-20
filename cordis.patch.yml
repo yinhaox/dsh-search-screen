@@ -1,0 +1,11 @@
+# dsh-search-screen's loader patch: one row that is both the Host half (the
+# page's search route) and the browser half (the sidebar entry and page), plus
+# the defaults a profile can override by row id.
+- insert:
+    - id: search-screen
+      name: dsh-search-screen
+      config:
+        # Sources the page asks for; integer 1..20.
+        maxResults: 8
+        # Per-query deadline in milliseconds; integer 1000..120000.
+        timeoutMs: 20000
