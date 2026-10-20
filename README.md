@@ -1,5 +1,9 @@
 # dsh-search-screen
 
+[![npm](https://img.shields.io/npm/v/@yinhaox/dsh-search-screen.svg)](https://www.npmjs.com/package/@yinhaox/dsh-search-screen)
+[![CI](https://github.com/yinhaox/dsh-search-screen/actions/workflows/ci.yml/badge.svg)](https://github.com/yinhaox/dsh-search-screen/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 给 **DeepSeek Harness（dsh）Web UI** 加一个「搜索大屏」：左侧栏一个放大镜入口，点开是整窗的搜索页——大搜索框、DeepSeek 摘要、可引用的来源列表。搜索走 dsh 自己的 web 搜索服务（`ctx.web`），和模型侧的 `web_search` 工具使用同一套 provider 选择，所以**在 profile 里配置一次，两边同时生效**。
 
 这是一个独立插件包（bundle + Client UI 插件），不依赖 dsh 源码仓库，也没有任何 npm 运行时依赖。
@@ -82,6 +86,20 @@ npm test          # node --test（23 个用例）
 - 路由依赖 dsh 的 `webServer` 与 `web` 两个服务；没有 `webServer` 的组合（headless/SDK）不会激活本插件，也没有可打开的页面。
 - 搜索在 Session 之外执行，因此只走 provider 的 API key 凭证，不会借用 DeepSeek Account 的会话令牌；用 Account 模型登录但没有存 API key 的环境会看到凭证缺失提示。
 - 不做流式结果、不做站内打开；最近搜索只存在插件实例内存里，刷新页面或重启后清空。
+
+## 发布
+
+版本发布由 GitHub Actions 完成（[`.github/workflows/publish.yml`](.github/workflows/publish.yml)）：
+
+1. 在 npm 包页面 → **Settings → Trusted publishing** 添加 GitHub 仓库 `yinhaox/dsh-search-screen`、workflow 文件名 `publish.yml`（只需配置一次，之后不再需要 token 或 OTP）。
+2. 更新 `package.json` 的 `version`，提交后打 tag 推送：
+
+```sh
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+workflow 会先跑测试，再执行 `npm publish --provenance --access public`；也可以从 Actions 页面手动触发。若不想用 Trusted publishing，可改用仓库 secret `NPM_TOKEN`（Automation token），workflow 里已留好注释。
 
 ## License
 

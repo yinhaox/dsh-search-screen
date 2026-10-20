@@ -1,0 +1,45 @@
+# Publish @yinhaox/dsh-search-screen to npm.
+#
+# Preferred setup: npm Trusted Publishing (OIDC, no long-lived token).
+# On npmjs.com open the package page -> Settings -> Trusted publishing and add
+#   Repository: yinhaox/dsh-search-screen
+#   Workflow:   publish.yml
+# Then run this workflow from Actions, or push a v* tag.
+#
+# Alternative: create an npm Automation token and store it as the repository
+# secret NPM_TOKEN, uncomment `registry-url` under setup-node and the env block
+# of the Publish step.
+name: Publish
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # Token-based publishing: uncomment this line and the env block below.
+          # registry-url: 'https://registry.npmjs.org'
+
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Test
+        run: npm test
+
+      - name: Publish
+        # env:
+        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
