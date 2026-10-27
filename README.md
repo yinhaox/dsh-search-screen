@@ -15,8 +15,9 @@ A web search plugin for the DeepSeek Harness (dsh) Web UI. The Search entry in t
 ## Features
 
 - Global sidebar entry that opens a full-window search page, independent of the current Session
-- Results show the answer, source titles, sites, publication dates, and snippets; links open in a new tab
-- Dedicated states for searching, no results, failures, and timeouts
+- Results show the answer, source titles, sites, publication dates, and snippets
+- Clicking a result title opens that page in the in-app reader: the Host fetches the page and the plugin keeps the title, paragraphs, lists, quotes, and code blocks, laid out with the host theme; the reader returns to the results, and the ↗ beside each title still opens the original in a new tab
+- Dedicated states for searching, no results, failures, and timeouts, with reader failures distinguishing timeouts, oversized pages, unsupported types, and unreachable sites
 - English and Chinese UI, following the language and theme set in dsh
 - Plain JavaScript with no runtime dependencies and no build step
 
@@ -28,14 +29,17 @@ In the Web UI, open **Plugins → Add plugin** and enter the npm package name `@
 
 Open **Search** in the sidebar, type a query, and press Enter. Focus stays in the field after a search, so the query can be edited and run again; Esc clears the field, and pressing Esc on an empty field returns to the search home.
 
+Clicking a result title opens the reader view of that page. **Back to results** or Esc returns to the list, and **Open the original** opens the page in a new tab; the ↗ beside each result title also opens it directly.
+
 ## Configuration
 
-The row id is `search-screen`, with two optional fields:
+The row id is `search-screen`, with three optional fields:
 
 | Field | Default | Range | Description |
 |---|---|---|---|
 | `maxResults` | `8` | 1–20 | Number of sources returned |
 | `timeoutMs` | `20000` | 1000–120000 | Timeout for one search |
+| `pageTimeoutMs` | `30000` | 1000–120000 | Timeout for reading one page |
 
 Override them by row id in the profile's `cordis.patch.yml`:
 
@@ -45,6 +49,7 @@ Override them by row id in the profile's `cordis.patch.yml`:
   config:
     maxResults: 12
     timeoutMs: 30000
+    pageTimeoutMs: 45000
 ```
 
 The search service comes from the profile's `web` row and is shared with the agent's `web_search` tool; credentials come from dsh's credentials / launch environment.
@@ -58,7 +63,7 @@ npm install
 npm test
 ```
 
-Tests cover the Host route, plugin registration, and page interaction under jsdom.
+Tests cover the Host routes, plugin registration, source extraction, and page interaction under jsdom.
 
 ## Limitations
 
@@ -66,6 +71,9 @@ Tests cover the Host route, plugin registration, and page interaction under jsdo
 - Requires the `webServer` and `web` services; compositions such as headless or the SDK do not activate the plugin.
 - Searches run outside a Session, so they use API key credentials only.
 - Recent searches live in memory and are cleared on refresh or restart.
+- The reader keeps only the title, body paragraphs, lists, quotes, and code blocks; images, scripts, and the site's own styling are dropped. Pages that need a login, or that refuse automated requests, show a fetch failure.
+- The reader fetches HTTP(S) only and refuses literal loopback, private-range, and reserved-name hosts, including redirect targets; DNS answers are not inspected.
+- One page is bounded to 2 MB and five redirects.
 
 ## Release
 

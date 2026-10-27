@@ -198,9 +198,12 @@ test('typing and submitting renders the answer and sources', async () => {
   // The field keeps focus across the hero -> results switch, so the next query
   // can be typed without clicking back into it.
   assert.equal(document.activeElement, container.querySelector('input'))
-  const link = container.querySelector('.dsh-search-screen__sourceTitle')
-  assert.equal(link.getAttribute('target'), '_blank')
-  assert.match(link.getAttribute('rel'), /noreferrer/u)
+  const title = container.querySelector('button.dsh-search-screen__sourceTitle')
+  assert.ok(title, 'the result title opens the reader')
+  const external = container.querySelector('.dsh-search-screen__sourceOpen')
+  assert.equal(external.getAttribute('href'), 'https://example.com/a')
+  assert.equal(external.getAttribute('target'), '_blank')
+  assert.match(external.getAttribute('rel'), /noreferrer/u)
 })
 
 test('shows skeletons while the search is in flight', async () => {
@@ -363,4 +366,138 @@ test('a submitted query stays in the recent chips after leaving the panel', asyn
   const remountedChips = [...remounted.container.querySelectorAll('.dsh-search-screen__chip')]
     .map(chip => chip.textContent)
   assert.ok(remountedChips.includes('deepseek'))
+})
+
+test('reads a source in the page and returns to the results', async () => {
+  const page = createPage()
+  const requested = []
+  const { container } = mount(page, {
+    search: async () => RESULT,
+    read: async (url) => {
+      requested.push(url)
+      return {
+        ok: true,
+        url,
+        title: 'Reader title',
+        description: 'A lead paragraph.',
+        chars: 1200,
+        tookMs: 90,
+        truncated: false,
+        blocks: [
+          { kind: 'paragraph', text: 'First paragraph.' },
+          { kind: 'heading', level: 2, text: 'A section' },
+          { kind: 'listItem', text: 'one' },
+          { kind: 'listItem', text: 'two' },
+          { kind: 'quote', text: 'A quote.' },
+          { kind: 'code', text: 'const x = 1' },
+        ],
+      }
+    },
+  })
+
+  type(container, 'deepseek')
+  submit(container)
+  await flush()
+
+  act(() => { container.querySelector('button.dsh-search-screen__sourceTitle').click() })
+  await flush()
+
+  assert.deepEqual(requested, ['https://example.com/a'])
+  assert.equal(modeOf(container), 'reader')
+  const text = container.textContent
+  assert.match(text, /Reader title/u)
+  assert.match(text, /A lead paragraph\./u)
+  assert.match(text, /First paragraph\./u)
+  assert.match(text, /A section/u)
+  assert.match(text, /1,200 字/u)
+  assert.ok(container.querySelector('.dsh-search-screen__article ul li'), 'list items share a list')
+  assert.ok(container.querySelector('blockquote'))
+  assert.ok(container.querySelector('pre code'))
+  assert.equal(document.activeElement, container.querySelector('.dsh-search-screen__readerBack'))
+
+  act(() => { container.querySelector('.dsh-search-screen__readerBack').click() })
+  await flush()
+  assert.equal(modeOf(container), 'results')
+  assert.match(container.textContent, /Example result/u)
+  assert.equal(document.activeElement, container.querySelector('input'))
+})
+
+test('the reader opens at the top and back restores the results position', async () => {
+  const page = createPage()
+  const { container } = mount(page, {
+    search: async () => RESULT,
+    read: async (url) => ({ ok: true, url, blocks: [{ kind: 'paragraph', text: 'Body.' }] }),
+  })
+
+  type(container, 'deepseek')
+  submit(container)
+  await flush()
+
+  const root = container.querySelector('.dsh-search-screen__page')
+  act(() => { root.scrollTop = 420 })
+  act(() => { container.querySelector('button.dsh-search-screen__sourceTitle').click() })
+  await flush()
+  assert.equal(root.scrollTop, 0, 'the article starts at its own top')
+
+  act(() => { root.scrollTop = 900 })
+  act(() => { container.querySelector('.dsh-search-screen__readerBack').click() })
+  await flush()
+  assert.equal(root.scrollTop, 420, 'the results list returns to where it was')
+})
+
+test('shows a reader failure and retries that page', async () => {
+  const page = createPage()
+  let attempts = 0
+  const { container } = mount(page, {
+    search: async () => RESULT,
+    read: async (url) => {
+      attempts += 1
+      if (attempts === 1) {
+        const error = new Error('blocked')
+        error.code = 'fetch-failed'
+        throw error
+      }
+      return { ok: true, url, chars: 9, blocks: [{ kind: 'paragraph', text: 'Body text.' }] }
+    },
+  })
+
+  type(container, 'deepseek')
+  submit(container)
+  await flush()
+  act(() => { container.querySelector('button.dsh-search-screen__sourceTitle').click() })
+  await flush()
+
+  assert.equal(modeOf(container), 'reader')
+  assert.match(container.textContent, /无法读取该网页/u)
+  assert.match(container.textContent, /网页无法访问/u)
+  assert.match(container.textContent, /fetch-failed/u)
+
+  const retry = container.querySelector('.dsh-search-screen__errorActions button')
+  act(() => { retry.click() })
+  await flush()
+  assert.equal(attempts, 2)
+  assert.match(container.textContent, /Body text\./u)
+})
+
+test('Escape in the reader returns to the results', async () => {
+  const page = createPage()
+  const { container } = mount(page, {
+    search: async () => RESULT,
+    read: async (url) => ({ ok: true, url, blocks: [{ kind: 'paragraph', text: 'Body.' }] }),
+  })
+
+  type(container, 'deepseek')
+  submit(container)
+  await flush()
+  act(() => { container.querySelector('button.dsh-search-screen__sourceTitle').click() })
+  await flush()
+  assert.equal(modeOf(container), 'reader')
+
+  act(() => {
+    container.querySelector('.dsh-search-screen__readerBack').dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    )
+  })
+  await flush()
+  assert.equal(modeOf(container), 'results')
 })

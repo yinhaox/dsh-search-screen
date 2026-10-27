@@ -9,3 +9,6 @@
         maxResults: 8
         # Per-query deadline in milliseconds; integer 1000..120000.
         timeoutMs: 20000
+        # Deadline for reading one page in the reader, in milliseconds;
+        # integer 1000..120000.
+        pageTimeoutMs: 30000

@@ -1,7 +1,7 @@
 {
   "name": "@yinhaox/dsh-search-screen",
-  "version": "0.1.1",
-  "description": "A full-window web search page for the DeepSeek Harness Web UI, using the same search provider as the agent's web_search tool.",
+  "version": "0.2.0",
+  "description": "A full-window web search page for the DeepSeek Harness Web UI, using the same search provider as the agent's web_search tool, with an in-page reader for result pages.",
   "keywords": [
     "deepseek",
     "deepseek-harness",
@@ -35,6 +35,8 @@
   "files": [
     "index.js",
     "handler.js",
+    "page.js",
+    "extract.js",
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
