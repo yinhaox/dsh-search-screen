@@ -146,7 +146,7 @@ test('renders the hero page as the panel content', () => {
   assert.match(markup, /dsh-search-screen__page/)
   assert.match(markup, /data-mode="hero"/)
   assert.match(markup, /DeepSeek 搜索/)
-  assert.match(markup, /输入搜索内容，按 Enter 搜索/)
+  assert.match(markup, /搜索内容，或粘贴网址直接阅读/)
   assert.match(markup, /试试这些/)
   assert.match(markup, /role="search"/)
   assert.match(markup, /DeepSeek Harness/)
@@ -172,7 +172,7 @@ test('renders the hero page in English for the en locale', () => {
   }))
 
   assert.match(markup, /DeepSeek Search/)
-  assert.match(markup, /Search the web, press Enter/)
+  assert.match(markup, /Search the web, or paste a page URL/)
   assert.match(markup, /Try one of these/)
   assert.match(markup, /Cordis plugin system/)
   assert.doesNotMatch(markup, /试试这些|输入搜索内容/u)

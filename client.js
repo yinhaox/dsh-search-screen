@@ -27,6 +27,8 @@ window.__ModuleLoader__.load({
     const PAGE_ROUTE = 'search-screen/page'
     /** Longest query the page submits; the Host route enforces the same bound. */
     const MAX_QUERY_LENGTH = 500
+    /** Longest page address the field accepts; the reader route enforces the same bound. */
+    const MAX_PAGE_URL_LENGTH = 2048
     /** Queries kept in the page's recents list. */
     const RECENT_LIMIT = 6
 
@@ -34,19 +36,26 @@ window.__ModuleLoader__.load({
       'panel': '搜索',
       'title': 'DeepSeek 搜索',
       'subtitle': '用 DeepSeek 搜索服务查找全网信息',
-      'placeholder': '输入搜索内容，按 Enter 搜索',
+      'placeholder': '搜索内容，或粘贴网址直接阅读',
       'search': '搜索',
       'searching': '搜索中…',
+      'readPage': '阅读',
       'formAria': '搜索',
       'hint.enter': '搜索',
       'hint.esc': '清空',
+      'hint.url': '直接阅读网页',
       'heroExamples': '试试这些',
       'heroRecent': '最近搜索',
       'backHome': '回到搜索首页',
+      'newTab': '新标签页',
+      'tabs': '标签页',
+      'tab.new': '新建标签页',
+      'tab.close': '关闭标签页',
       'clear': '清空输入',
       'open': '在新标签页打开',
       'read': '阅读网页',
       'reader.back': '返回结果',
+      'reader.home': '返回首页',
       'reader.loading': '正在读取网页…',
       'reader.failed': '无法读取该网页',
       'reader.words': '约 {count} 字',
@@ -84,19 +93,26 @@ window.__ModuleLoader__.load({
       'panel': 'Search',
       'title': 'DeepSeek Search',
       'subtitle': 'Search the web through the DeepSeek search service',
-      'placeholder': 'Search the web, press Enter',
+      'placeholder': 'Search the web, or paste a page URL',
       'search': 'Search',
       'searching': 'Searching…',
+      'readPage': 'Read',
       'formAria': 'Search',
       'hint.enter': 'to search',
       'hint.esc': 'to clear',
+      'hint.url': 'to read the page',
       'heroExamples': 'Try one of these',
       'heroRecent': 'Recent searches',
       'backHome': 'Back to the search home',
+      'newTab': 'New tab',
+      'tabs': 'Tabs',
+      'tab.new': 'New tab',
+      'tab.close': 'Close tab',
       'clear': 'Clear the query',
       'open': 'Open in a new tab',
       'read': 'Read this page',
       'reader.back': 'Back to results',
+      'reader.home': 'Back to home',
       'reader.loading': 'Reading the page…',
       'reader.failed': 'Could not read this page',
       'reader.words': '{count} characters',
@@ -137,10 +153,26 @@ window.__ModuleLoader__.load({
     }
 
     const CSS = `
-.dsh-search-screen__page { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; height: 100%; overflow-y: auto; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: var(--dsh-content-font-size, 14px); }
+.dsh-search-screen__browser { box-sizing: border-box; display: flex; flex-direction: column; height: 100%; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: var(--dsh-content-font-size, 14px); }
+.dsh-search-screen__tabstrip { display: flex; flex: none; align-items: flex-end; gap: 3px; padding: calc(var(--dsh-frame-top-clearance, 0px) + 8px) 10px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l1); background: color-mix(in srgb, var(--dsw-alias-bg-base) 94%, var(--dsw-alias-label-primary) 6%); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.dsh-search-screen__tabstrip::-webkit-scrollbar { display: none; }
+.dsh-search-screen__tab { display: flex; flex: 0 0 auto; align-items: center; width: 190px; max-width: 190px; height: 32px; padding: 0 4px 0 10px; border: 0.5px solid transparent; border-bottom: none; border-radius: 9px 9px 0 0; color: var(--dsw-alias-label-secondary); transition: background var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease), color var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease); }
+.dsh-search-screen__tab[data-active='true'] { background: var(--dsw-alias-bg-base); border-color: var(--dsw-alias-border-l2); color: var(--dsw-alias-label-primary); box-shadow: 0 -1px 2px var(--dsw-alias-bg-mask-2); }
+.dsh-search-screen__tab:not([data-active='true']):hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.dsh-search-screen__tabLabel { display: inline-flex; flex: 1; min-width: 0; align-items: center; gap: 6px; height: 100%; padding: 0; border: none; background: transparent; color: inherit; font: inherit; font-size: 12.5px; line-height: 18px; text-align: start; cursor: pointer; }
+.dsh-search-screen__tabText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsh-search-screen__tabBusy { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--dsw-alias-state-business-primary); }
+.dsh-search-screen__tabClose { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: none; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.dsh-search-screen__tabClose:hover:not(:disabled) { background: var(--dsw-alias-bg-mask-2); }
+.dsh-search-screen__tabClose:disabled { opacity: 0.3; cursor: default; }
+.dsh-search-screen__tabNew { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; margin: 0 0 2px 2px; padding: 0; border: none; border-radius: 50%; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; transition: background var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease), color var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease); }
+.dsh-search-screen__tabNew:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.dsh-search-screen__tabpanel { display: flex; flex: 1; min-height: 0; }
+.dsh-search-screen__tabpanel[hidden] { display: none; }
+.dsh-search-screen__page { box-sizing: border-box; display: flex; flex: 1; flex-direction: column; align-items: center; height: 100%; min-height: 0; overflow-y: auto; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font-size: var(--dsh-content-font-size, 14px); }
 .dsh-search-screen__page[data-mode='hero'] { background: radial-gradient(1000px 460px at 50% 0%, color-mix(in srgb, var(--dsw-alias-state-business-primary) 7%, var(--dsw-alias-bg-base)), var(--dsw-alias-bg-base) 68%); }
 .dsh-search-screen__header { box-sizing: border-box; width: 100%; }
-.dsh-search-screen__page[data-mode='hero'] .dsh-search-screen__header { padding: calc(var(--dsh-frame-top-clearance, 0px) + clamp(64px, 18vh, 184px)) 24px 56px; }
+.dsh-search-screen__page[data-mode='hero'] .dsh-search-screen__header { padding: clamp(56px, 15vh, 168px) 24px 56px; }
 .dsh-search-screen__headerInner { display: flex; flex-direction: column; align-items: center; gap: 26px; width: 100%; max-width: 820px; margin: 0 auto; }
 .dsh-search-screen__brand { display: flex; align-items: center; gap: 16px; }
 .dsh-search-screen__brandText { display: flex; flex-direction: column; min-width: 0; }
@@ -167,7 +199,7 @@ window.__ModuleLoader__.load({
 .dsh-search-screen__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .dsh-search-screen__chip { height: 30px; padding: 0 14px; border: 0.5px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; cursor: pointer; transition: background var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease), color var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease), border-color var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease); }
 .dsh-search-screen__chip:hover { border-color: var(--dsw-alias-border-l3); background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.dsh-search-screen__page[data-mode='results'] .dsh-search-screen__header { position: sticky; top: 0; z-index: 3; padding: calc(var(--dsh-frame-top-clearance, 0px) + 10px) 24px 10px; border-bottom: 0.5px solid var(--dsw-alias-border-l1); background: color-mix(in srgb, var(--dsw-alias-bg-base) 88%, transparent); backdrop-filter: blur(12px); }
+.dsh-search-screen__page[data-mode='results'] .dsh-search-screen__header { position: sticky; top: 0; z-index: 3; padding: 10px 24px; border-bottom: 0.5px solid var(--dsw-alias-border-l1); background: color-mix(in srgb, var(--dsw-alias-bg-base) 88%, transparent); backdrop-filter: blur(12px); }
 .dsh-search-screen__page[data-mode='results'] .dsh-search-screen__headerInner { flex-direction: row; flex-wrap: wrap; gap: 16px; max-width: 860px; }
 .dsh-search-screen__page[data-mode='results'] .dsh-search-screen__brand { flex: none; margin: 0; padding: 4px 10px 4px 4px; border: none; border-radius: 999px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background var(--ds-transition-duration, 150ms) var(--ds-ease-in-out, ease); }
 .dsh-search-screen__page[data-mode='results'] .dsh-search-screen__brand:hover { background: var(--dsw-alias-interactive-bg-hover); }
@@ -224,7 +256,7 @@ window.__ModuleLoader__.load({
 .dsh-search-screen__skeletonLine--meta { width: 28%; }
 .dsh-search-screen__skeletonLine--titleLg { width: 64%; height: 26px; }
 .dsh-search-screen__skeletonLine--lead { width: 82%; }
-.dsh-search-screen__readerBar { position: sticky; top: 0; z-index: 3; box-sizing: border-box; width: 100%; padding: calc(var(--dsh-frame-top-clearance, 0px) + 10px) 24px 10px; border-bottom: 0.5px solid var(--dsw-alias-border-l1); background: color-mix(in srgb, var(--dsw-alias-bg-base) 88%, transparent); backdrop-filter: blur(12px); }
+.dsh-search-screen__readerBar { position: sticky; top: 0; z-index: 3; box-sizing: border-box; width: 100%; padding: 10px 24px; border-bottom: 0.5px solid var(--dsw-alias-border-l1); background: color-mix(in srgb, var(--dsw-alias-bg-base) 88%, transparent); backdrop-filter: blur(12px); }
 .dsh-search-screen__readerBarInner { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 820px; margin: 0 auto; }
 .dsh-search-screen__readerBack { display: inline-flex; flex: none; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 10px; }
 .dsh-search-screen__readerSite { flex: 1; min-width: 0; overflow: hidden; font-size: 12.5px; line-height: 18px; color: var(--dsw-alias-label-tertiary); text-overflow: ellipsis; white-space: nowrap; }
@@ -250,7 +282,7 @@ window.__ModuleLoader__.load({
 .dsh-search-screen__readerSkeleton { display: flex; flex-direction: column; gap: 14px; }
 .dsh-search-screen__readerLoading { margin: 0; font-size: 12.5px; line-height: 18px; color: var(--dsw-alias-label-tertiary); }
 .dsh-search-screen__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.dsh-search-screen__submit:focus-visible, .dsh-search-screen__clear:focus-visible, .dsh-search-screen__chip:focus-visible, .dsh-search-screen__brand:focus-visible, .dsh-search-screen__ghostButton:focus-visible, .dsh-search-screen__sourceTitle:focus-visible, .dsh-search-screen__sourceOpen:focus-visible, .dsh-search-screen__readerBack:focus-visible, .dsh-search-screen__readerOpen:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
+.dsh-search-screen__submit:focus-visible, .dsh-search-screen__clear:focus-visible, .dsh-search-screen__chip:focus-visible, .dsh-search-screen__brand:focus-visible, .dsh-search-screen__ghostButton:focus-visible, .dsh-search-screen__sourceTitle:focus-visible, .dsh-search-screen__sourceOpen:focus-visible, .dsh-search-screen__readerBack:focus-visible, .dsh-search-screen__readerOpen:focus-visible, .dsh-search-screen__tabLabel:focus-visible, .dsh-search-screen__tabClose:focus-visible, .dsh-search-screen__tabNew:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
 @keyframes dsh-search-screen-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.5 } }
 @media (max-width: 720px) {
   .dsh-search-screen__page[data-mode='hero'] .dsh-search-screen__header { padding-inline: 18px; padding-top: calc(var(--dsh-frame-top-clearance, 0px) + 48px); }
@@ -283,7 +315,7 @@ window.__ModuleLoader__.load({
 }
 @media (prefers-reduced-motion: reduce) {
   .dsh-search-screen__skeletonAvatar, .dsh-search-screen__skeletonLine { animation: none; }
-  .dsh-search-screen__form, .dsh-search-screen__submit, .dsh-search-screen__clear, .dsh-search-screen__chip, .dsh-search-screen__source, .dsh-search-screen__brand, .dsh-search-screen__ghostButton, .dsh-search-screen__sourceOpen, .dsh-search-screen__readerBack, .dsh-search-screen__readerOpen { transition: none; }
+  .dsh-search-screen__form, .dsh-search-screen__submit, .dsh-search-screen__clear, .dsh-search-screen__chip, .dsh-search-screen__source, .dsh-search-screen__brand, .dsh-search-screen__ghostButton, .dsh-search-screen__sourceOpen, .dsh-search-screen__readerBack, .dsh-search-screen__readerOpen, .dsh-search-screen__tab, .dsh-search-screen__tabNew { transition: none; }
 }
 `
 
@@ -393,6 +425,32 @@ window.__ModuleLoader__.load({
       if (key === 'error.tooLong') return t(key, { max: MAX_QUERY_LENGTH })
       if (key !== undefined) return t(key)
       return failure?.message !== undefined && failure.message !== '' ? failure.message : t('error.unknown')
+    }
+
+    /**
+     * Decide whether the field's text is a page address the reader can open,
+     * the way a browser address bar does, and normalize it for the route.
+     * Only explicit http(s) addresses count, so an ordinary query is never
+     * turned into a navigation; the reader route revalidates the result.
+     * @param text - the field's current text.
+     * @returns the absolute page address, or undefined when the text is a query.
+     */
+    function pageAddressOf(text) {
+      const value = String(text ?? '').trim()
+      if (value === '' || /\s/u.test(value)) return undefined
+      let parsed
+      try {
+        parsed = new URL(value)
+      } catch {
+        // Not an absolute address, so it can only be a query.
+        return undefined
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
+      // "http://foo" has no dotted host: it is a typo or an intranet name, and
+      // the reader route refuses local targets anyway, so it stays a query.
+      if (!parsed.hostname.includes('.') && !parsed.hostname.startsWith('[')) return undefined
+      if (parsed.username !== '' || parsed.password !== '') return undefined
+      return parsed.href
     }
 
     /**
@@ -582,13 +640,16 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The search page: the hero search box and example queries before a search,
-     * then a sticky toolbar over the answer and its citeable sources, with the
-     * loading, empty, and failure states. Opening one source swaps the page for
-     * a reader view of that page, fetched through the Host's reader route.
+     * One page inside the browser frame: the hero search box and example
+     * queries before a search, then a sticky toolbar over the answer and its
+     * citeable sources, with the loading, empty, and failure states. Opening one
+     * source swaps the page for a reader view of that page, fetched through the
+     * Host's reader route. The shell mounts one of these per tab and keeps the
+     * inactive ones mounted but hidden, so every tab keeps its own query,
+     * results, reader, and scroll position.
      * @param props - the main-panel seat: `t`, the injected search and read
-     * operations, the remembered queries, and the framework's panel-selection
-     * hook.
+     * operations, the remembered queries, the framework's panel-selection hook,
+     * and the shell's `active`, `tabId`, and `onMeta` bookkeeping.
      * @returns the page element.
      */
     function SearchPage(props) {
@@ -598,6 +659,9 @@ window.__ModuleLoader__.load({
       const activeLocale = props.activeLocale
       const readRecent = props.recentQueries
       const rememberQuery = props.rememberQuery
+      const active = props.active !== false
+      const tabId = props.tabId
+      const onMeta = props.onMeta
       const [draft, setDraft] = useState('')
       const [status, setStatus] = useState('idle')
       const [outcome, setOutcome] = useState(null)
@@ -622,32 +686,49 @@ window.__ModuleLoader__.load({
         inputRef.current?.focus()
       }, [])
 
-      useEffect(() => {
-        focusInput()
-        return () => {
-          requestRef.current?.abort()
-          pageRef.current?.abort()
-        }
-      }, [focusInput])
+      /** Put focus where this page's current view expects it. */
+      const focusActive = useCallback(() => {
+        if (view === 'reader') backRef.current?.focus()
+        else focusInput()
+      }, [focusInput, view])
 
-      // Entering the reader starts at the top of the article and lands on the
-      // back control; leaving it puts the results list back where it was and
-      // lands in the field, so both directions keep scroll and keyboard work.
+      // A tab that is closed unmounts its page, which cancels whatever it had
+      // in flight. A hidden tab keeps its state and its requests untouched.
+      useEffect(() => () => {
+        requestRef.current?.abort()
+        pageRef.current?.abort()
+      }, [])
+
+      // Only the visible tab owns the keyboard: activating a tab lands in its
+      // field, or on its reader's back control.
+      useEffect(() => {
+        if (active) focusActive()
+      }, [active, focusActive])
+
+      // Entering the reader starts at the top of the article; leaving it puts
+      // the results list back where it was.
       useEffect(() => {
         const root = rootRef.current
-        if (view === 'reader') {
-          if (root !== null) root.scrollTop = 0
-          backRef.current?.focus()
-          return
-        }
-        if (root !== null) root.scrollTop = resultsScrollRef.current
-        focusInput()
-      }, [view, focusInput])
+        if (root === null) return
+        root.scrollTop = view === 'reader' ? 0 : resultsScrollRef.current
+      }, [view])
 
-      // Re-entering the panel from the sidebar lands in the search field.
+      // Re-entering the panel from the sidebar lands in the visible tab's field.
       useEffect(() => {
-        if (activePanelId === PANEL_ID) focusInput()
-      }, [activePanelId, focusInput])
+        if (activePanelId === PANEL_ID && active) focusActive()
+      }, [activePanelId, active, focusActive])
+
+      // Publish this tab's label and spinner state to the browser shell: the
+      // page title while reading, the query while searching, nothing on home.
+      useEffect(() => {
+        if (typeof onMeta !== 'function') return
+        const page = reading?.page
+        const title = view === 'reader'
+          ? (page?.title || reading?.source?.title || hostOf(reading?.source?.url ?? ''))
+          : status === 'idle' ? '' : (outcome?.query || draft)
+        const busy = status === 'loading' || reading?.status === 'loading'
+        onMeta(tabId, { title: title === undefined ? '' : String(title), busy })
+      }, [draft, onMeta, outcome, reading, status, tabId, view])
 
       const remember = useCallback((query) => {
         if (typeof rememberQuery === 'function') {
@@ -716,6 +797,20 @@ window.__ModuleLoader__.load({
           focusInput()
           return
         }
+        const address = pageAddressOf(query)
+        if (address !== undefined) {
+          // An address is navigation, not a query: stop any search in flight and
+          // open the reader for it, the way an address bar leaves the page.
+          requestRef.current?.abort()
+          requestRef.current = null
+          setDraft(address)
+          if (status === 'loading') {
+            setStatus('idle')
+            setOutcome(null)
+          }
+          void openReader({ url: address, title: '' })
+          return
+        }
         requestRef.current?.abort()
         if (query.length > MAX_QUERY_LENGTH) {
           setDraft(query)
@@ -745,7 +840,7 @@ window.__ModuleLoader__.load({
         } finally {
           if (requestRef.current === controller) requestRef.current = null
         }
-      }, [focusInput, remember, search])
+      }, [focusInput, openReader, remember, search, status])
 
       const onSubmit = useCallback((event) => {
         event.preventDefault()
@@ -784,6 +879,7 @@ window.__ModuleLoader__.load({
       }, [focusInput])
 
       const compact = status !== 'idle'
+      const address = pageAddressOf(draft)
       const sources = outcome?.sources ?? []
       const language = typeof activeLocale === 'function' ? String(activeLocale()) : 'en'
       const examples = language.startsWith('zh') ? EXAMPLES.zh : EXAMPLES.en
@@ -807,8 +903,8 @@ window.__ModuleLoader__.load({
         autoCorrect: 'off',
         autoCapitalize: 'off',
         spellCheck: false,
-        enterKeyHint: 'search',
-        maxLength: MAX_QUERY_LENGTH,
+        enterKeyHint: address === undefined ? 'search' : 'go',
+        maxLength: MAX_PAGE_URL_LENGTH,
         onChange: event => { setDraft(event.target.value) },
         onKeyDown: onInputKeyDown,
         onCompositionStart: () => { composingRef.current = true },
@@ -827,7 +923,9 @@ window.__ModuleLoader__.load({
         className: 'dsh-search-screen__submit',
         type: 'submit',
         disabled: status === 'loading' || draft.trim() === '',
-      }, status === 'loading' ? t('searching') : t('search')))
+      }, address !== undefined
+        ? t('readPage')
+        : status === 'loading' ? t('searching') : t('search')))
 
       // The brand and the form keep their positions and element types across
       // modes, so switching between the hero and the results toolbar never
@@ -853,7 +951,9 @@ window.__ModuleLoader__.load({
           h('span', { className: 'dsh-search-screen__hintItem' },
             h('kbd', { className: 'dsh-search-screen__kbd' }, 'Enter'), t('hint.enter')),
           h('span', { className: 'dsh-search-screen__hintItem' },
-            h('kbd', { className: 'dsh-search-screen__kbd' }, 'Esc'), t('hint.esc'))),
+            h('kbd', { className: 'dsh-search-screen__kbd' }, 'Esc'), t('hint.esc')),
+          h('span', { className: 'dsh-search-screen__hintItem' },
+            h('kbd', { className: 'dsh-search-screen__kbd' }, 'URL'), t('hint.url'))),
         h('div', { className: 'dsh-search-screen__suggestions' },
           h('div', { className: 'dsh-search-screen__chipGroup' },
             h('p', { className: 'dsh-search-screen__chipLabel' }, t('heroExamples')),
@@ -978,6 +1078,9 @@ window.__ModuleLoader__.load({
             }))))
 
       const readingPage = reading?.page ?? null
+      // The reader returns to whatever is behind it: the results list when a
+      // search is showing, the search home when the address was typed straight in.
+      const readerBack = status === 'idle' ? t('reader.home') : t('reader.back')
       const readerTitle = readingPage?.title !== undefined && readingPage.title !== ''
         ? readingPage.title
         : reading?.source?.title !== undefined && reading.source.title !== ''
@@ -991,7 +1094,7 @@ window.__ModuleLoader__.load({
               className: 'dsh-search-screen__ghostButton dsh-search-screen__readerBack',
               type: 'button',
               onClick: closeReader,
-            }, h(BackIcon), t('reader.back')),
+            }, h(BackIcon), readerBack),
             h('span', { className: 'dsh-search-screen__readerSite' }, hostOf(reading.source.url)),
             h('a', {
               className: 'dsh-search-screen__ghostButton dsh-search-screen__readerOpen',
@@ -1026,7 +1129,7 @@ window.__ModuleLoader__.load({
                     className: 'dsh-search-screen__ghostButton',
                     type: 'button',
                     onClick: closeReader,
-                  }, t('reader.back')),
+                  }, readerBack),
                   h('a', {
                     key: 'original',
                     className: 'dsh-search-screen__ghostButton',
@@ -1066,9 +1169,148 @@ window.__ModuleLoader__.load({
         'data-mode': mode,
         ...view === 'reader' ? { onKeyDown: onReaderKeyDown } : {},
       },
-      h('style', { key: 'style' }, CSS),
       h('div', { className: 'dsh-search-screen__sr', role: 'status', 'aria-live': 'polite' }, statusText),
       view === 'reader' ? reader : h(React.Fragment, null, header, compact ? results : null))
+    }
+
+    /**
+     * The panel's browser frame: one tab strip over one page per tab. Every page
+     * stays mounted, so switching tabs is instant and never cancels a search or
+     * a page read that is still in flight, while only the active page is shown
+     * and owns the keyboard.
+     * @param props - the main-panel seat, forwarded to every page.
+     * @returns the browser element.
+     */
+    function BrowserPanel(props) {
+      const t = props.t
+      const nextTabId = useRef(1)
+      const [tabs, setTabs] = useState(() => [{ id: 0 }])
+      const [activeId, setActiveId] = useState(0)
+      const [metas, setMetas] = useState({})
+      const stripRef = useRef(null)
+
+      const openTab = useCallback(() => {
+        const id = nextTabId.current
+        nextTabId.current += 1
+        setTabs(previous => [...previous, { id }])
+        setActiveId(id)
+      }, [])
+
+      const closeTab = useCallback((id) => {
+        // The frame always keeps one page, the way a browser window does.
+        if (tabs.length <= 1) return
+        const index = tabs.findIndex(tab => tab.id === id)
+        if (index === -1) return
+        const remaining = tabs.filter(tab => tab.id !== id)
+        setTabs(remaining)
+        setMetas(previous => {
+          if (!Object.hasOwn(previous, id)) return previous
+          const next = { ...previous }
+          delete next[id]
+          return next
+        })
+        setActiveId(current => current === id ? remaining[Math.min(index, remaining.length - 1)].id : current)
+      }, [tabs])
+
+      const activate = useCallback((id) => { setActiveId(id) }, [])
+
+      // A page reports its label and spinner; unchanged reports are dropped so a
+      // re-render of one page does not re-render the strip.
+      const noteMeta = useCallback((id, meta) => {
+        setMetas(previous => {
+          const current = previous[id]
+          if (current !== undefined && current.title === meta.title && current.busy === meta.busy) return previous
+          return { ...previous, [id]: meta }
+        })
+      }, [])
+
+      // Shift the strip so the newly active tab is visible in a narrow panel.
+      useEffect(() => {
+        const strip = stripRef.current
+        if (strip === null) return
+        const tab = strip.querySelector(`[data-tab-id='${String(activeId)}']`)
+        if (typeof tab?.scrollIntoView === 'function') tab.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      }, [activeId])
+
+      // The frame cannot offer Ctrl+T / Ctrl+W / Ctrl+Tab: a web page cannot
+      // intercept those, so they would act on the page's own browser instead.
+      // Double-clicking empty strip space is the safe equivalent of "new tab".
+      const onStripDoubleClick = useCallback((event) => {
+        if (event.target.closest?.('.dsh-search-screen__tab, .dsh-search-screen__tabNew') !== null) return
+        openTab()
+      }, [openTab])
+
+      const strip = h('div', {
+        ref: stripRef,
+        className: 'dsh-search-screen__tabstrip',
+        role: 'tablist',
+        'aria-label': t('tabs'),
+        onDoubleClick: onStripDoubleClick,
+      },
+      tabs.map(tab => {
+        const meta = metas[tab.id]
+        const label = meta !== undefined && meta.title !== '' ? meta.title : t('newTab')
+        const isActive = tab.id === activeId
+        return h('div', {
+          key: tab.id,
+          className: 'dsh-search-screen__tab',
+          'data-active': isActive ? 'true' : 'false',
+          'data-tab-id': tab.id,
+          onAuxClick: (event) => {
+            // Middle click closes, as it does on a browser tab.
+            if (event.button === 1) {
+              event.preventDefault()
+              closeTab(tab.id)
+            }
+          },
+        },
+        h('button', {
+          type: 'button',
+          role: 'tab',
+          'aria-selected': isActive,
+          className: 'dsh-search-screen__tabLabel',
+          title: label,
+          onClick: () => { activate(tab.id) },
+        },
+        meta?.busy === true ? h('span', { className: 'dsh-search-screen__tabBusy', 'aria-hidden': 'true' }) : null,
+        h('span', { className: 'dsh-search-screen__tabText' }, label)),
+        h('button', {
+          type: 'button',
+          className: 'dsh-search-screen__tabClose',
+          disabled: tabs.length === 1,
+          'aria-label': t('tab.close'),
+          title: t('tab.close'),
+          onClick: () => { closeTab(tab.id) },
+        }, h('svg', {
+          viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none',
+          'aria-hidden': 'true', focusable: 'false',
+        }, h('path', { d: 'M7 7 17 17M17 7 7 17', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }))))
+      }),
+      h('button', {
+        type: 'button',
+        className: 'dsh-search-screen__tabNew',
+        'aria-label': t('tab.new'),
+        title: t('tab.new'),
+        onClick: openTab,
+      }, h('svg', {
+        viewBox: '0 0 24 24', width: 15, height: 15, fill: 'none',
+        'aria-hidden': 'true', focusable: 'false',
+      }, h('path', { d: 'M12 6v12M6 12h12', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' }))))
+
+      return h('div', { className: 'dsh-search-screen__browser' },
+        h('style', { key: 'style' }, CSS),
+        strip,
+        tabs.map(tab => h('div', {
+          key: tab.id,
+          className: 'dsh-search-screen__tabpanel',
+          role: 'tabpanel',
+          hidden: tab.id !== activeId,
+        }, h(SearchPage, {
+          ...props,
+          active: tab.id === activeId,
+          tabId: tab.id,
+          onMeta: noteMeta,
+        }))))
     }
 
     /**
@@ -1098,7 +1340,7 @@ window.__ModuleLoader__.load({
         key: PANEL_ID,
         locale: NS,
         inject: () => face,
-      }, SearchPage))
+      }, BrowserPanel))
       ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
         name: 'sidebar.panellist',
         id: PANEL_ID,

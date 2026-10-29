@@ -138,9 +138,14 @@ function mount(page, overrides = {}) {
   return { container, root }
 }
 
+/** The visible tab panel; inactive tabs stay mounted but hidden. */
+function activePanel(container) {
+  return container.querySelector('.dsh-search-screen__tabpanel:not([hidden])')
+}
+
 /** Replace the input's value the way a user typing does. */
 function type(container, value) {
-  const input = container.querySelector('input')
+  const input = activePanel(container).querySelector('input')
   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
   act(() => {
     setter.call(input, value)
@@ -149,9 +154,9 @@ function type(container, value) {
   return input
 }
 
-/** Submit the page's search form. */
+/** Submit the visible tab's search form. */
 function submit(container) {
-  const form = container.querySelector('form')
+  const form = activePanel(container).querySelector('form')
   act(() => {
     form.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
   })
@@ -164,9 +169,9 @@ async function flush() {
   })
 }
 
-/** Read the page root's mode. */
+/** Read the visible tab page's mode. */
 function modeOf(container) {
-  return container.querySelector('.dsh-search-screen__page').getAttribute('data-mode')
+  return activePanel(container).querySelector('.dsh-search-screen__page').getAttribute('data-mode')
 }
 
 test('typing and submitting renders the answer and sources', async () => {
@@ -500,4 +505,190 @@ test('Escape in the reader returns to the results', async () => {
   })
   await flush()
   assert.equal(modeOf(container), 'results')
+})
+
+test('a pasted page address opens the reader instead of searching', async () => {
+  const page = createPage()
+  const searched = []
+  const requested = []
+  const { container } = mount(page, {
+    search: async (query) => {
+      searched.push(query)
+      return RESULT
+    },
+    read: async (url) => {
+      requested.push(url)
+      return {
+        ok: true,
+        url,
+        title: 'DeepSeek 官网',
+        chars: 321,
+        blocks: [{ kind: 'paragraph', text: 'DeepSeek 是一家 AI 公司。' }],
+      }
+    },
+  })
+
+  type(container, 'https://www.deepseek.com/')
+  // The field acts as an address bar: the button offers to read, not to search.
+  assert.equal(container.querySelector('.dsh-search-screen__submit').textContent, '阅读')
+  submit(container)
+  await flush()
+
+  assert.deepEqual(searched, [], 'an address never reaches the search route')
+  assert.deepEqual(requested, ['https://www.deepseek.com/'])
+  assert.equal(modeOf(container), 'reader')
+  assert.match(container.textContent, /DeepSeek 官网/u)
+  assert.match(container.textContent, /DeepSeek 是一家 AI 公司。/u)
+  assert.equal(container.querySelector('.dsh-search-screen__readerSite').textContent, 'www.deepseek.com')
+  assert.equal(container.querySelector('.dsh-search-screen__readerBack').textContent, '返回首页')
+
+  act(() => { container.querySelector('.dsh-search-screen__readerBack').click() })
+  await flush()
+  assert.equal(modeOf(container), 'hero')
+  assert.equal(document.activeElement, container.querySelector('input'))
+  // A navigated address is not a search, so no recent chip remembers it.
+  const chips = [...container.querySelectorAll('.dsh-search-screen__chip')].map(chip => chip.textContent)
+  assert.ok(!chips.includes('https://www.deepseek.com/'), `unexpected chip in ${JSON.stringify(chips)}`)
+})
+
+test('typing an address from the results returns to those results', async () => {
+  const page = createPage()
+  const requested = []
+  const { container } = mount(page, {
+    search: async () => RESULT,
+    read: async (url) => {
+      requested.push(url)
+      return { ok: true, url, blocks: [{ kind: 'paragraph', text: 'Body.' }] }
+    },
+  })
+
+  type(container, 'deepseek')
+  submit(container)
+  await flush()
+
+  type(container, 'https://www.deepseek.com/')
+  submit(container)
+  await flush()
+  assert.deepEqual(requested, ['https://www.deepseek.com/'])
+  assert.equal(modeOf(container), 'reader')
+  // The results list is still behind the reader, so the reader returns to it.
+  assert.equal(container.querySelector('.dsh-search-screen__readerBack').textContent, '返回结果')
+
+  act(() => { container.querySelector('.dsh-search-screen__readerBack').click() })
+  await flush()
+  assert.equal(modeOf(container), 'results')
+  assert.match(container.textContent, /Example result/u)
+})
+
+test('only explicit http(s) addresses become navigation', async () => {
+  const page = createPage()
+  const searched = []
+  const requested = []
+  const { container } = mount(page, {
+    search: async (query) => {
+      searched.push(query)
+      return RESULT
+    },
+    read: async (url) => {
+      requested.push(url)
+      return { ok: true, url, blocks: [] }
+    },
+  })
+
+  for (const text of ['example.com', 'ftp://example.com/file', 'http://localhost:3080/', 'deepseek 官网']) {
+    type(container, text)
+    submit(container)
+    await flush()
+  }
+
+  assert.deepEqual(searched, ['example.com', 'ftp://example.com/file', 'http://localhost:3080/', 'deepseek 官网'])
+  assert.deepEqual(requested, [])
+})
+
+test('each page and query keeps its own tab', async () => {
+  const page = createPage()
+  const requested = []
+  const { container } = mount(page, {
+    search: async () => RESULT,
+    read: async (url) => {
+      requested.push(url)
+      return {
+        ok: true,
+        url,
+        title: 'DeepSeek 官网',
+        blocks: [{ kind: 'paragraph', text: '官网正文。' }],
+      }
+    },
+  })
+
+  type(container, 'https://www.deepseek.com/')
+  submit(container)
+  await flush()
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 1)
+  assert.equal(container.querySelector('.dsh-search-screen__tabText').textContent, 'DeepSeek 官网')
+
+  act(() => { container.querySelector('.dsh-search-screen__tabNew').click() })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 2)
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel:not([hidden])').length, 1)
+  assert.equal(modeOf(container), 'hero', 'a new tab starts on the search home')
+  assert.equal(document.activeElement, activePanel(container).querySelector('input'))
+  assert.equal([...container.querySelectorAll('.dsh-search-screen__tabText')][1].textContent, '新标签页')
+
+  type(container, 'deepseek')
+  submit(container)
+  await flush()
+  assert.equal(modeOf(container), 'results')
+  assert.match(activePanel(container).textContent, /Example result/u)
+  const labels = [...container.querySelectorAll('.dsh-search-screen__tabText')].map(node => node.textContent)
+  assert.deepEqual(labels, ['DeepSeek 官网', 'deepseek'])
+
+  // The page in the first tab survived the visit to the second one.
+  act(() => { container.querySelectorAll('.dsh-search-screen__tabLabel')[0].click() })
+  assert.equal(modeOf(container), 'reader')
+  assert.match(activePanel(container).textContent, /官网正文。/u)
+  assert.deepEqual(requested, ['https://www.deepseek.com/'])
+})
+
+test('closing a tab activates its neighbor and the last tab stays', async () => {
+  const page = createPage()
+  const { container } = mount(page, { search: async () => RESULT })
+
+  act(() => { container.querySelector('.dsh-search-screen__tabNew').click() })
+  act(() => { container.querySelector('.dsh-search-screen__tabNew').click() })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 3)
+
+  // Closing the active tab lands on the tab that took its place.
+  act(() => { [...container.querySelectorAll('.dsh-search-screen__tabClose')][2].click() })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 2)
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel:not([hidden])').length, 1)
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel:not([hidden])')[0].isConnected, true)
+
+  act(() => { [...container.querySelectorAll('.dsh-search-screen__tabClose')][1].click() })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 1)
+  assert.equal(container.querySelector('.dsh-search-screen__tabClose').disabled, true)
+})
+
+test('double-clicking empty strip space opens a tab', async () => {
+  const page = createPage()
+  const { container } = mount(page, { search: async () => RESULT })
+  const strip = container.querySelector('.dsh-search-screen__tabstrip')
+
+  act(() => { strip.dispatchEvent(new window.MouseEvent('dblclick', { bubbles: true })) })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 2)
+
+  // Double-clicking a tab itself must not open another one.
+  act(() => {
+    container.querySelector('.dsh-search-screen__tabLabel').dispatchEvent(
+      new window.MouseEvent('dblclick', { bubbles: true }),
+    )
+  })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 2)
+
+  // The new-tab button owns its own clicks; the strip must not add a third.
+  act(() => {
+    container.querySelector('.dsh-search-screen__tabNew').dispatchEvent(
+      new window.MouseEvent('dblclick', { bubbles: true }),
+    )
+  })
+  assert.equal(container.querySelectorAll('.dsh-search-screen__tabpanel').length, 2)
 })
